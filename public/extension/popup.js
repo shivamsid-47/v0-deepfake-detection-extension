@@ -11,6 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultsList = document.getElementById("resultsList");
   const rescanBtn = document.getElementById("rescanBtn");
   const clearBtn = document.getElementById("clearBtn");
+  
+  // Settings elements
+  const settingsToggle = document.getElementById("settingsToggle");
+  const settingsPanel = document.getElementById("settingsPanel");
+  const apiUrlInput = document.getElementById("apiUrl");
+  const saveSettingsBtn = document.getElementById("saveSettings");
+  const settingStatus = document.getElementById("settingStatus");
 
   // Status configurations
   const statusConfig = {
@@ -150,4 +157,35 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }, 3000);
+
+  // Settings toggle
+  settingsToggle.addEventListener("click", () => {
+    settingsPanel.classList.toggle("visible");
+    settingsToggle.classList.toggle("active");
+  });
+
+  // Load saved settings
+  chrome.storage.sync.get(["apiUrl"], (result) => {
+    if (result.apiUrl) {
+      apiUrlInput.value = result.apiUrl;
+    }
+  });
+
+  // Save settings
+  saveSettingsBtn.addEventListener("click", () => {
+    const apiUrl = apiUrlInput.value.trim();
+    
+    // Remove trailing slash if present
+    const cleanUrl = apiUrl.replace(/\/$/, "");
+    
+    chrome.storage.sync.set({ apiUrl: cleanUrl }, () => {
+      settingStatus.textContent = "Settings saved!";
+      settingStatus.className = "setting-status success";
+      
+      setTimeout(() => {
+        settingStatus.textContent = "";
+        settingStatus.className = "setting-status";
+      }, 2000);
+    });
+  });
 });

@@ -424,9 +424,9 @@ export default function LandingPage() {
               <Shield className="w-5 h-5 text-primary" />
               <span className="font-semibold">DeepFake Shield</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Powered by Hugging Face AI Models
-            </p>
+<p className="text-sm text-muted-foreground">
+                  Powered by Free Hugging Face Inference API
+                </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <a
                 href="https://huggingface.co"

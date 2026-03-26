@@ -1,18 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const HF_IMAGE_API_URL =
-  "https://api-inference.huggingface.co/models/prithivMLmods/Deep-Fake-Detector-v2-Model";
+// Two models for video frame analysis
+const HF_MODEL_1 = "https://api-inference.huggingface.co/models/prithivMLmods/Deep-Fake-Detector-v2-Model";
+const HF_MODEL_2 = "https://api-inference.huggingface.co/models/dima806/deepfake_vs_real_image_detection";
+
+async function queryFrameModel(modelUrl: string, imageData: Blob, apiKey?: string) {
+  const headers: HeadersInit = {
+    "Content-Type": "application/octet-stream",
+  };
+  
+  if (apiKey) {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch(modelUrl, {
+    method: "POST",
+    headers,
+    body: imageData,
+  });
+
+  if (!response.ok) {
+    if (response.status === 503) {
+      return { loading: true, estimatedTime: 20 };
+    }
+    throw new Error(`Model request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function parseFrameResult(result: unknown): { fake: number; real: number } {
+  const predictions = Array.isArray(result) ? result : [result];
+  let fakeScore = 0;
+  let realScore = 0;
+
+  for (const pred of predictions as Array<{ label?: string; score?: number }>) {
+    const label = pred.label?.toLowerCase() || "";
+    const score = pred.score || 0;
+    
+    if (label.includes("fake") || label.includes("deepfake") || label.includes("ai") || label.includes("generated")) {
+      fakeScore = Math.max(fakeScore, score);
+    } else if (label.includes("real") || label.includes("authentic") || label.includes("human") || label.includes("true")) {
+      realScore = Math.max(realScore, score);
+    }
+  }
+
+  return { fake: fakeScore, real: realScore };
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // API key is optional - works without it (with rate limits)
     const apiKey = process.env.HUGGINGFACE_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "HUGGINGFACE_API_KEY not configured" },
-        { status: 500 }
-      );
-    }
 
     const { frames } = await request.json();
 
@@ -23,9 +62,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Analyze multiple frames for better accuracy
+    // Analyze multiple frames with both models for better accuracy
     const frameResults: Array<{ fake: number; real: number }> = [];
     const maxFrames = Math.min(frames.length, 5); // Limit to 5 frames
+    let isLoading = false;
+    const modelsUsed = new Set<string>();
 
     for (let i = 0; i < maxFrames; i++) {
       const frameBase64 = frames[i];
@@ -36,49 +77,40 @@ export async function POST(request: NextRequest) {
         const binaryData = Buffer.from(base64Data, "base64");
         const imageData = new Blob([binaryData]);
 
-        // Call Hugging Face API for each frame
-        const response = await fetch(HF_IMAGE_API_URL, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/octet-stream",
-          },
-          body: imageData,
-        });
+        // Query both models for this frame
+        const modelResults = await Promise.allSettled([
+          queryFrameModel(HF_MODEL_1, imageData, apiKey),
+          queryFrameModel(HF_MODEL_2, imageData, apiKey),
+        ]);
 
-        if (response.status === 503) {
-          return NextResponse.json(
-            {
-              error: "Model is loading",
-              status: "loading",
-              estimatedTime: 20,
-            },
-            { status: 503 }
-          );
-        }
-
-        if (response.ok) {
-          const result = await response.json();
-          const predictions = Array.isArray(result) ? result : [result];
-
-          let fakeScore = 0;
-          let realScore = 0;
-
-          for (const pred of predictions) {
-            const label = pred.label?.toLowerCase() || "";
-            if (label.includes("fake") || label.includes("deepfake") || label.includes("ai")) {
-              fakeScore = pred.score;
-            } else if (label.includes("real") || label.includes("authentic") || label.includes("human")) {
-              realScore = pred.score;
+        modelResults.forEach((result, modelIndex) => {
+          if (result.status === "fulfilled") {
+            const data = result.value;
+            if (data.loading) {
+              isLoading = true;
+            } else {
+              const parsed = parseFrameResult(data);
+              frameResults.push(parsed);
+              modelsUsed.add(modelIndex === 0 ? "Deep-Fake-Detector-v2" : "deepfake_vs_real_image_detection");
             }
           }
-
-          frameResults.push({ fake: fakeScore, real: realScore });
-        }
+        });
       } catch (frameError) {
         console.error(`Error processing frame ${i}:`, frameError);
         // Continue with other frames
       }
+    }
+
+    // If all models are loading
+    if (frameResults.length === 0 && isLoading) {
+      return NextResponse.json(
+        {
+          error: "Models are loading",
+          status: "loading",
+          estimatedTime: 20,
+        },
+        { status: 503 }
+      );
     }
 
     if (frameResults.length === 0) {
@@ -88,20 +120,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Aggregate results across all frames
-    const avgFakeScore =
-      frameResults.reduce((sum, r) => sum + r.fake, 0) / frameResults.length;
-    const avgRealScore =
-      frameResults.reduce((sum, r) => sum + r.real, 0) / frameResults.length;
+    // Aggregate results across all frames and models
+    const avgFakeScore = frameResults.reduce((sum, r) => sum + r.fake, 0) / frameResults.length;
+    const avgRealScore = frameResults.reduce((sum, r) => sum + r.real, 0) / frameResults.length;
 
-    // Determine verdict based on average scores
+    // Determine verdict with ensemble approach
     let verdict: "authentic" | "uncertain" | "deepfake";
     let confidence: number;
 
-    if (avgFakeScore > 0.7) {
+    if (avgFakeScore > 0.65) {
       verdict = "deepfake";
       confidence = avgFakeScore;
-    } else if (avgRealScore > 0.7) {
+    } else if (avgRealScore > 0.65) {
       verdict = "authentic";
       confidence = avgRealScore;
     } else {
@@ -116,8 +146,9 @@ export async function POST(request: NextRequest) {
         fake: avgFakeScore,
         real: avgRealScore,
       },
-      framesAnalyzed: frameResults.length,
-      model: "Deep-Fake-Detector-v2",
+      framesAnalyzed: maxFrames,
+      resultsCollected: frameResults.length,
+      modelsUsed: Array.from(modelsUsed),
       type: "video",
     });
   } catch (error) {

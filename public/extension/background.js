@@ -1,7 +1,20 @@
 // DeepFake Shield - Background Service Worker
 
-// API endpoint - Update this to your deployed URL
-const API_BASE_URL = "https://YOUR_DEPLOYED_URL.vercel.app";
+// API endpoint - Uses the deployed Vercel URL
+// Users can change this in extension settings if self-hosting
+let API_BASE_URL = ""; // Will be set dynamically
+
+// Initialize API URL from storage or use default
+chrome.storage.sync.get(["apiUrl"], (result) => {
+  API_BASE_URL = result.apiUrl || "";
+});
+
+// Listen for API URL changes
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === "sync" && changes.apiUrl) {
+    API_BASE_URL = changes.apiUrl.newValue || "";
+  }
+});
 
 // Store scan results per tab
 const tabResults = new Map();
@@ -41,6 +54,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Handle media scanning
 async function handleMediaScan(mediaData, tabId) {
   if (!tabId) return { error: "No tab ID" };
+
+  // Check if API URL is configured
+  if (!API_BASE_URL) {
+    return { error: "API URL not configured. Please set the backend URL in extension settings." };
+  }
 
   // Initialize results for this tab
   if (!tabResults.has(tabId)) {

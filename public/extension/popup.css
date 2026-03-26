@@ -364,3 +364,111 @@ body {
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* Settings Section */
+.settings-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-toggle:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.settings-toggle.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.settings-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.settings-panel {
+  display: none;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.settings-panel.visible {
+  display: block;
+}
+
+.setting-group {
+  margin-bottom: 12px;
+}
+
+.setting-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.setting-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.setting-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.setting-input::placeholder {
+  color: var(--text-muted);
+}
+
+.setting-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.setting-status {
+  margin-top: 8px;
+  font-size: 11px;
+  text-align: center;
+}
+
+.setting-status.success {
+  color: var(--status-green);
+}
+
+.setting-status.error {
+  color: var(--status-red);
+}

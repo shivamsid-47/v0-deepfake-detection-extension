@@ -353,7 +353,7 @@ export default function LandingPage() {
                     </Button>
                     <Button size="lg" variant="outline" asChild>
                       <a
-                        href="https://github.com"
+                        href="https://github.com/shivamsid-47/v0-deepfake-detection-extension"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -393,6 +393,16 @@ export default function LandingPage() {
                   The DeepFake Shield icon will appear in your extensions bar
                 </li>
               </ol>
+              <div className="mt-4 p-3 bg-background/50 rounded-lg border border-border">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Backend URL:</span>{" "}
+                  <code className="bg-background px-1 rounded">
+                    https://v0-deepfake-detection-extension.vercel.app
+                  </code>
+                  <br />
+                  <span className="text-muted-foreground/70">Pre-configured in extension. No setup required!</span>
+                </p>
+              </div>
             </div>
           </Card>
         </div>

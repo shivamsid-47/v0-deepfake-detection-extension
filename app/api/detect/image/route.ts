@@ -1,36 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Two models for better accuracy
-const HF_MODEL_1 = "https://api-inference.huggingface.co/models/prithivMLmods/Deep-Fake-Detector-v2-Model";
-const HF_MODEL_2 = "https://api-inference.huggingface.co/models/dima806/deepfake_vs_real_image_detection";
+// More reliable models for deepfake detection
+const MODELS = [
+  {
+    url: "https://api-inference.huggingface.co/models/Organika/sdxl-detector",
+    name: "SDXL-Detector",
+    fakeLabels: ["artificial", "fake", "generated", "ai"],
+    realLabels: ["real", "human", "authentic", "natural"],
+  },
+  {
+    url: "https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector",
+    name: "AI-Image-Detector", 
+    fakeLabels: ["artificial", "ai", "generated"],
+    realLabels: ["human", "real"],
+  },
+];
 
-async function queryModel(modelUrl: string, imageData: Blob, apiKey?: string) {
-  const headers: HeadersInit = {
-    "Content-Type": "application/octet-stream",
-  };
-  
-  // Use API key if available, otherwise use free tier
-  if (apiKey) {
-    headers["Authorization"] = `Bearer ${apiKey}`;
-  }
+async function queryModel(
+  modelUrl: string,
+  imageData: Blob,
+  retries = 3
+): Promise<{ data: unknown; error?: string }> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(modelUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+        body: imageData,
+      });
 
-  const response = await fetch(modelUrl, {
-    method: "POST",
-    headers,
-    body: imageData,
-  });
+      if (response.status === 503) {
+        // Model is loading - wait and retry
+        const waitTime = Math.min(5000 * (attempt + 1), 15000);
+        console.log(`[v0] Model loading, waiting ${waitTime}ms before retry ${attempt + 1}`);
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        continue;
+      }
 
-  if (!response.ok) {
-    if (response.status === 503) {
-      return { loading: true, estimatedTime: 20 };
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`[v0] Model error: ${response.status} - ${errorText}`);
+        return { data: null, error: `HTTP ${response.status}` };
+      }
+
+      const data = await response.json();
+      console.log(`[v0] Model response:`, JSON.stringify(data).slice(0, 200));
+      return { data };
+    } catch (error) {
+      console.log(`[v0] Fetch error on attempt ${attempt + 1}:`, error);
+      if (attempt === retries - 1) {
+        return { data: null, error: String(error) };
+      }
     }
-    throw new Error(`Model request failed: ${response.status}`);
   }
-
-  return response.json();
+  return { data: null, error: "Max retries exceeded" };
 }
 
-function parseModelResult(result: unknown): { fake: number; real: number } {
+function parseModelResult(
+  result: unknown,
+  fakeLabels: string[],
+  realLabels: string[]
+): { fake: number; real: number } {
   const predictions = Array.isArray(result) ? result : [result];
   let fakeScore = 0;
   let realScore = 0;
@@ -38,11 +70,34 @@ function parseModelResult(result: unknown): { fake: number; real: number } {
   for (const pred of predictions as Array<{ label?: string; score?: number }>) {
     const label = pred.label?.toLowerCase() || "";
     const score = pred.score || 0;
-    
-    if (label.includes("fake") || label.includes("deepfake") || label.includes("ai") || label.includes("generated")) {
+
+    const isFake = fakeLabels.some((fl) => label.includes(fl));
+    const isReal = realLabels.some((rl) => label.includes(rl));
+
+    if (isFake) {
       fakeScore = Math.max(fakeScore, score);
-    } else if (label.includes("real") || label.includes("authentic") || label.includes("human") || label.includes("true")) {
+    } else if (isReal) {
       realScore = Math.max(realScore, score);
+    }
+  }
+
+  // If no scores found, try to infer from the structure
+  if (fakeScore === 0 && realScore === 0 && predictions.length >= 2) {
+    // Assume first two predictions are the main classes
+    const sorted = [...predictions].sort(
+      (a: { score?: number }, b: { score?: number }) =>
+        (b.score || 0) - (a.score || 0)
+    );
+    const topPred = sorted[0] as { label?: string; score?: number };
+    const label = topPred.label?.toLowerCase() || "";
+    const score = topPred.score || 0.5;
+
+    if (fakeLabels.some((fl) => label.includes(fl))) {
+      fakeScore = score;
+      realScore = 1 - score;
+    } else {
+      realScore = score;
+      fakeScore = 1 - score;
     }
   }
 
@@ -51,9 +106,6 @@ function parseModelResult(result: unknown): { fake: number; real: number } {
 
 export async function POST(request: NextRequest) {
   try {
-    // API key is optional - works without it (with rate limits)
-    const apiKey = process.env.HUGGINGFACE_API_KEY;
-
     const { imageUrl, imageBase64 } = await request.json();
 
     if (!imageUrl && !imageBase64) {
@@ -68,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (imageBase64) {
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
       const binaryData = Buffer.from(base64Data, "base64");
-      imageData = new Blob([binaryData]);
+      imageData = new Blob([binaryData], { type: "image/jpeg" });
     } else {
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
@@ -80,61 +132,55 @@ export async function POST(request: NextRequest) {
       imageData = await imageResponse.blob();
     }
 
-    // Query both models in parallel for better accuracy
-    const modelResults = await Promise.allSettled([
-      queryModel(HF_MODEL_1, imageData, apiKey),
-      queryModel(HF_MODEL_2, imageData, apiKey),
-    ]);
+    console.log(`[v0] Processing image, size: ${imageData.size} bytes`);
 
+    // Query models sequentially to handle rate limits better
     const scores: Array<{ fake: number; real: number }> = [];
     const modelsUsed: string[] = [];
-    let isLoading = false;
+    const errors: string[] = [];
 
-    modelResults.forEach((result, index) => {
-      if (result.status === "fulfilled") {
-        const data = result.value;
-        if (data.loading) {
-          isLoading = true;
-        } else {
-          const parsed = parseModelResult(data);
+    for (const model of MODELS) {
+      const { data, error } = await queryModel(model.url, imageData);
+
+      if (error) {
+        errors.push(`${model.name}: ${error}`);
+        continue;
+      }
+
+      if (data) {
+        const parsed = parseModelResult(data, model.fakeLabels, model.realLabels);
+        if (parsed.fake > 0 || parsed.real > 0) {
           scores.push(parsed);
-          modelsUsed.push(index === 0 ? "Deep-Fake-Detector-v2" : "deepfake_vs_real_image_detection");
+          modelsUsed.push(model.name);
+          console.log(`[v0] ${model.name} scores - fake: ${parsed.fake}, real: ${parsed.real}`);
         }
       }
-    });
+    }
 
-    // If all models are loading
-    if (scores.length === 0 && isLoading) {
+    // If no models worked, return error with details
+    if (scores.length === 0) {
+      console.log(`[v0] All models failed:`, errors);
       return NextResponse.json(
         {
-          error: "Models are loading",
-          status: "loading",
-          estimatedTime: 20,
+          error: "Detection models are temporarily unavailable. Please try again in a moment.",
+          details: errors,
         },
         { status: 503 }
       );
     }
 
-    // If no results at all
-    if (scores.length === 0) {
-      return NextResponse.json(
-        { error: "All detection models failed" },
-        { status: 500 }
-      );
-    }
-
-    // Average scores from both models
+    // Average scores from all successful models
     const avgFakeScore = scores.reduce((sum, s) => sum + s.fake, 0) / scores.length;
     const avgRealScore = scores.reduce((sum, s) => sum + s.real, 0) / scores.length;
 
-    // Determine verdict with ensemble approach
+    // Determine verdict
     let verdict: "authentic" | "uncertain" | "deepfake";
     let confidence: number;
 
-    if (avgFakeScore > 0.65) {
+    if (avgFakeScore > avgRealScore && avgFakeScore > 0.5) {
       verdict = "deepfake";
       confidence = avgFakeScore;
-    } else if (avgRealScore > 0.65) {
+    } else if (avgRealScore > avgFakeScore && avgRealScore > 0.5) {
       verdict = "authentic";
       confidence = avgRealScore;
     } else {
@@ -153,9 +199,9 @@ export async function POST(request: NextRequest) {
       type: "image",
     });
   } catch (error) {
-    console.error("Detection error:", error);
+    console.error("[v0] Detection error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: String(error) },
       { status: 500 }
     );
   }

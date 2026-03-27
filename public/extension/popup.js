@@ -164,11 +164,12 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsToggle.classList.toggle("active");
   });
 
-  // Load saved settings
+  // Default API URL (same as background.js)
+  const DEFAULT_API_URL = "https://v0-deepfake-detection-extension.vercel.app";
+  
+  // Load saved settings or show default
   chrome.storage.sync.get(["apiUrl"], (result) => {
-    if (result.apiUrl) {
-      apiUrlInput.value = result.apiUrl;
-    }
+    apiUrlInput.value = result.apiUrl || DEFAULT_API_URL;
   });
 
   // Save settings

@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Same models as image detection
+// Verified working models on HuggingFace (March 2026)
 const MODELS = [
   {
-    url: "https://api-inference.huggingface.co/models/Organika/sdxl-detector",
-    name: "SDXL-Detector",
-    fakeLabels: ["artificial", "fake", "generated", "ai"],
-    realLabels: ["real", "human", "authentic", "natural"],
+    url: "https://api-inference.huggingface.co/models/prithivMLmods/Deep-Fake-Detector-v2-Model",
+    name: "Deep-Fake-Detector-v2",
+    fakeLabels: ["deepfake", "fake"],
+    realLabels: ["realism", "real"],
   },
   {
-    url: "https://api-inference.huggingface.co/models/umm-maybe/AI-image-detector",
-    name: "AI-Image-Detector",
-    fakeLabels: ["artificial", "ai", "generated"],
-    realLabels: ["human", "real"],
+    url: "https://api-inference.huggingface.co/models/dima806/deepfake_vs_real_image_detection",
+    name: "Deepfake-vs-Real-Detection",
+    fakeLabels: ["fake"],
+    realLabels: ["real"],
   },
 ];
 

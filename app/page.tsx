@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldIcon } from "@/components/shield-icon";
+import { DemoSection } from "@/components/demo-section";
 import {
   Shield,
   Download,
@@ -56,6 +57,9 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">
               Features
+            </a>
+            <a href="#demo" className="hover:text-foreground transition-colors">
+              Try Demo
             </a>
             <a href="#how-it-works" className="hover:text-foreground transition-colors">
               How It Works
@@ -216,6 +220,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Demo Section */}
+      <DemoSection />
 
       {/* How It Works */}
       <section id="how-it-works" className="py-20">

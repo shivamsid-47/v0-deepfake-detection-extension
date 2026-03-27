@@ -346,9 +346,9 @@ export default function LandingPage() {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
                     <Button size="lg" asChild>
-                      <a href="/extension/deepfake-shield.zip" download>
+                      <a href="/api/download-extension">
                         <Download className="w-5 h-5 mr-2" />
-                        Download ZIP
+                        Download Extension
                       </a>
                     </Button>
                     <Button size="lg" variant="outline" asChild>

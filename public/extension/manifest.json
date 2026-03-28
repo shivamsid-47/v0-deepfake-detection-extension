@@ -2,9 +2,15 @@
   "manifest_version": 3,
   "name": "DeepFake Shield",
   "version": "1.0.0",
-  "description": "AI-powered deepfake detection for images, videos, and audio.",
-  "permissions": ["activeTab", "storage", "scripting"],
-  "host_permissions": ["<all_urls>"],
+  "description": "Detect deepfake images, videos, and audio with AI-powered analysis. Shield changes color based on detection results.",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "DeepFake Shield",
@@ -22,9 +28,11 @@
   "background": {
     "service_worker": "background.js"
   },
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["content.js"],
-    "run_at": "document_idle"
-  }]
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
 }

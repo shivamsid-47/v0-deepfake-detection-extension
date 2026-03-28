@@ -1,7 +1,7 @@
 // DeepFake Shield - Background Service Worker
 
 // Default API endpoint - Your deployed Vercel URL
-const DEFAULT_API_URL = "https://v0-deepfake-detection-extension.vercel.app";
+const DEFAULT_API_URL = "https://v0-deepfake-detection-extension-pi.vercel.app";
 
 // API endpoint - Uses deployed Vercel URL by default
 let API_BASE_URL = DEFAULT_API_URL;

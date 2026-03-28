@@ -404,7 +404,7 @@ export default function LandingPage() {
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">Backend URL:</span>{" "}
                   <code className="bg-background px-1 rounded">
-                    https://v0-deepfake-detection-extension.vercel.app
+                    https://v0-deepfake-detection-extension-pi.vercel.app
                   </code>
                   <br />
                   <span className="text-muted-foreground/70">Pre-configured in extension. No setup required!</span>
@@ -445,6 +445,13 @@ export default function LandingPage() {
                   Powered by Free Hugging Face Inference API
                 </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <a
+                href="/law-enforcement"
+                className="hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                <Lock className="w-3 h-3" />
+                Law Enforcement
+              </a>
               <a
                 href="https://huggingface.co"
                 target="_blank"

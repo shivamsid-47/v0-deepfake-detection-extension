@@ -5,7 +5,7 @@
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/shivamsid-47/v0-deepfake-detection-extension)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-![DeepFake Shield Banner](https://v0-deepfake-detection-extension.vercel.app/og-image.png)
+![DeepFake Shield Banner](https://v0-deepfake-detection-extension-pi.vercel.app/og-image.png)
 
 ## Overview
 
@@ -46,7 +46,7 @@ DeepFake Shield is a comprehensive solution for detecting AI-generated and manip
 
 ## Live Demo
 
-**Website**: [https://v0-deepfake-detection-extension.vercel.app](https://v0-deepfake-detection-extension.vercel.app)
+**Website**: [https://v0-deepfake-detection-extension-pi.vercel.app](https://v0-deepfake-detection-extension-pi.vercel.app)
 
 Try the demo section on the website to upload and analyze:
 - Images (JPEG, PNG, WebP, GIF)
@@ -60,7 +60,7 @@ Try the demo section on the website to upload and analyze:
 ### Chrome Extension Installation
 
 1. **Download the Extension**
-   - Visit [https://v0-deepfake-detection-extension.vercel.app](https://v0-deepfake-detection-extension.vercel.app)
+   - Visit [https://v0-deepfake-detection-extension-pi.vercel.app](https://v0-deepfake-detection-extension-pi.vercel.app)
    - Click "Download Extension" button
    - Extract the ZIP file
 
@@ -309,6 +309,82 @@ v0-deepfake-detection-extension/
 | 🔴 Red | Deepfake | Likely AI-generated or manipulated (fake score > 65%) |
 | 🔵 Blue | Scanning | Analysis in progress |
 | ⚪ Gray | Idle | No media detected on page |
+
+---
+
+## Law Enforcement Logging
+
+DeepFake Shield includes a forensic logging system designed for law enforcement agencies. All detection events are logged with detailed metadata suitable for legal proceedings.
+
+### Accessing the Dashboard
+
+1. Navigate to `/law-enforcement` on the deployed site
+2. Enter the admin API key (default: `deepfake-shield-admin-2024`)
+3. Set a custom key via `ADMIN_API_KEY` environment variable
+
+### Logged Data
+
+Each detection event records:
+
+| Field | Description |
+|-------|-------------|
+| **Log ID** | Unique identifier (e.g., `DFS-1711234567890-A1B2C3D4`) |
+| **Timestamp** | ISO 8601 format with Unix timestamp |
+| **File Hash** | SHA-256 cryptographic hash of the analyzed file |
+| **File Size** | Size in bytes |
+| **Verdict** | Detection result (authentic/uncertain/deepfake) |
+| **Confidence** | Confidence score (0-1) |
+| **Source IP** | Client IP address |
+| **User Agent** | Browser/client information |
+| **Processing Time** | Analysis duration in milliseconds |
+| **Models Used** | Detection models applied |
+| **Session ID** | Unique session identifier |
+
+### API Endpoints
+
+```bash
+# Get statistics
+curl -H "x-api-key: YOUR_KEY" \
+  "https://your-domain.vercel.app/api/logs?action=stats"
+
+# Query logs with filters
+curl -H "x-api-key: YOUR_KEY" \
+  "https://your-domain.vercel.app/api/logs?verdict=deepfake&type=image"
+
+# Export as CSV
+curl -H "x-api-key: YOUR_KEY" \
+  "https://your-domain.vercel.app/api/logs?action=export&format=csv" \
+  -o logs.csv
+
+# Export as JSON
+curl -H "x-api-key: YOUR_KEY" \
+  "https://your-domain.vercel.app/api/logs?action=export&format=json" \
+  -o logs.json
+
+# Get specific log by ID
+curl -H "x-api-key: YOUR_KEY" \
+  "https://your-domain.vercel.app/api/logs/DFS-1711234567890-A1B2C3D4"
+```
+
+### Query Parameters
+
+| Parameter | Values | Description |
+|-----------|--------|-------------|
+| `action` | `query`, `stats`, `export` | API action type |
+| `type` | `image`, `video`, `audio` | Filter by media type |
+| `verdict` | `authentic`, `uncertain`, `deepfake` | Filter by verdict |
+| `startDate` | ISO date string | Filter logs after date |
+| `endDate` | ISO date string | Filter logs before date |
+| `format` | `csv`, `json` | Export format |
+| `limit` | number | Max records to return |
+| `offset` | number | Pagination offset |
+
+### Security Considerations
+
+- Set a strong `ADMIN_API_KEY` in production
+- All API access requires authentication
+- Logs are stored in-memory (use a database for persistence)
+- Implements SHA-256 file hashing for evidence integrity
 
 ---
 

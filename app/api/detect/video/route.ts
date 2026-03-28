@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createForensicLog } from "@/lib/forensic-logger";
 
 // Local video deepfake detection using frame analysis
 // Analyzes multiple frames for consistency and deepfake indicators
@@ -86,6 +87,8 @@ function analyzeFrameBuffer(buffer: Buffer): FrameAnalysisResult {
 }
 
 export async function POST(request: NextRequest) {
+  const processingStartTime = Date.now();
+  
   try {
     const { frames } = await request.json();
 
@@ -154,6 +157,34 @@ export async function POST(request: NextRequest) {
 
     // Deduplicate indicators
     const uniqueIndicators = [...new Set(allIndicators)];
+    const modelsUsed = ["Frame-Forensic-Analysis", "Temporal-Consistency-Detector"];
+    const processingEndTime = Date.now();
+
+    // Combine all frame data for hash
+    const combinedFrameData = Buffer.concat(
+      frames.slice(0, maxFrames).map((f: string) => {
+        const base64Data = f.replace(/^data:image\/\w+;base64,/, "");
+        return Buffer.from(base64Data, "base64");
+      })
+    );
+
+    // Log for law enforcement
+    const forensicLog = createForensicLog({
+      type: "video",
+      verdict,
+      confidence,
+      scores: { fake: avgFakeScore, real: avgRealScore },
+      fileData: combinedFrameData,
+      fileSize: combinedFrameData.length,
+      mimeType: "video/frames",
+      sourceIP: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
+      modelsUsed,
+      processingTimeMs: processingEndTime - processingStartTime,
+      indicators: { framesAnalyzed: frameResults.length, scoreVariance },
+      referer: request.headers.get("referer") || undefined,
+      origin: request.headers.get("origin") || undefined,
+    });
 
     return NextResponse.json({
       verdict,
@@ -164,8 +195,9 @@ export async function POST(request: NextRequest) {
       },
       framesAnalyzed: frameResults.length,
       indicators: uniqueIndicators.slice(0, 5),
-      modelsUsed: ["Frame-Forensic-Analysis", "Temporal-Consistency-Detector"],
+      modelsUsed,
       type: "video",
+      logId: forensicLog.id,
     });
   } catch (error) {
     console.error("Video detection error:", error);

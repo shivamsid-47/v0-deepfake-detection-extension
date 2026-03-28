@@ -446,6 +446,13 @@ export default function LandingPage() {
                 </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <a
+                href="/law-enforcement"
+                className="hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                <Lock className="w-3 h-3" />
+                Law Enforcement
+              </a>
+              <a
                 href="https://huggingface.co"
                 target="_blank"
                 rel="noopener noreferrer"

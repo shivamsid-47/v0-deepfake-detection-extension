@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createForensicLog } from "@/lib/forensic-logger";
 
 // Local deepfake detection using image forensics techniques
 // No external API dependency - works 100% locally
@@ -147,6 +148,8 @@ function analyzeImageBuffer(buffer: Buffer): ImageAnalysisResult {
 }
 
 export async function POST(request: NextRequest) {
+  const processingStartTime = Date.now();
+  
   try {
     const { imageUrl, imageBase64 } = await request.json();
 
@@ -192,6 +195,27 @@ export async function POST(request: NextRequest) {
       confidence = Math.max(analysis.fakeScore, analysis.realScore);
     }
 
+    const modelsUsed = ["Forensic-Noise-Analysis", "Edge-Pattern-Detector"];
+    const processingEndTime = Date.now();
+
+    // Log for law enforcement
+    const forensicLog = createForensicLog({
+      type: "image",
+      verdict,
+      confidence,
+      scores: { fake: analysis.fakeScore, real: analysis.realScore },
+      fileData: imageBuffer,
+      fileSize: imageBuffer.length,
+      mimeType: imageBase64 ? "image/unknown" : "image/url",
+      sourceIP: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
+      modelsUsed,
+      processingTimeMs: processingEndTime - processingStartTime,
+      indicators: analysis.analysisDetails,
+      referer: request.headers.get("referer") || undefined,
+      origin: request.headers.get("origin") || undefined,
+    });
+
     return NextResponse.json({
       verdict,
       confidence,
@@ -201,8 +225,9 @@ export async function POST(request: NextRequest) {
       },
       indicators: analysis.indicators,
       analysisDetails: analysis.analysisDetails,
-      modelsUsed: ["Forensic-Noise-Analysis", "Edge-Pattern-Detector"],
+      modelsUsed,
       type: "image",
+      logId: forensicLog.id,
     });
   } catch (error) {
     console.error("Image detection error:", error);

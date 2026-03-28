@@ -404,7 +404,7 @@ export default function LandingPage() {
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">Backend URL:</span>{" "}
                   <code className="bg-background px-1 rounded">
-                    https://v0-deepfake-detection-extension-shivamsid-47s-projects.vercel.app
+                    https://v0-deepfake-detection-extension-pi.vercel.app
                   </code>
                   <br />
                   <span className="text-muted-foreground/70">Pre-configured in extension. No setup required!</span>

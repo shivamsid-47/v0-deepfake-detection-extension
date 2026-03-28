@@ -5,7 +5,7 @@
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/shivamsid-47/v0-deepfake-detection-extension)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-![DeepFake Shield Banner](https://v0-deepfake-detection-extension-shivamsid-47s-projects.vercel.app/og-image.png)
+![DeepFake Shield Banner](https://v0-deepfake-detection-extension-pi.vercel.app/og-image.png)
 
 ## Overview
 
@@ -46,7 +46,7 @@ DeepFake Shield is a comprehensive solution for detecting AI-generated and manip
 
 ## Live Demo
 
-**Website**: [https://v0-deepfake-detection-extension-shivamsid-47s-projects.vercel.app](https://v0-deepfake-detection-extension-shivamsid-47s-projects.vercel.app)
+**Website**: [https://v0-deepfake-detection-extension-pi.vercel.app](https://v0-deepfake-detection-extension-pi.vercel.app)
 
 Try the demo section on the website to upload and analyze:
 - Images (JPEG, PNG, WebP, GIF)
@@ -60,7 +60,7 @@ Try the demo section on the website to upload and analyze:
 ### Chrome Extension Installation
 
 1. **Download the Extension**
-   - Visit [https://v0-deepfake-detection-extension-shivamsid-47s-projects.vercel.app](https://v0-deepfake-detection-extension-shivamsid-47s-projects.vercel.app)
+   - Visit [https://v0-deepfake-detection-extension-pi.vercel.app](https://v0-deepfake-detection-extension-pi.vercel.app)
    - Click "Download Extension" button
    - Extract the ZIP file
 
